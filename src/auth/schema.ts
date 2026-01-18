@@ -48,3 +48,12 @@ export const totpSecrets = sqliteTable('totp_secrets', {
     verified: integer('verified', { mode: 'boolean' }).default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
+
+// Recovery codes for TOTP
+export const recoveryCode = sqliteTable('recovery_codes', {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull().references(() => users.id),
+    codeHash: text('code_hash').notNull(), // Stored hashed
+    used: integer('used', { mode: 'boolean' }).default(false),
+    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
