@@ -1,7 +1,15 @@
 import { Discord } from 'arctic'
 
-export const discord = new Discord(
-    process.env.DISCORD_CLIENT_ID!,
-    process.env.DISCORD_CLIENT_SECRET!,
-    process.env.DISCORD_REDIRECT_URI!
-)
+export interface DiscordOAuthConfig {
+    clientId: string
+    clientSecret: string
+    redirectUri: string
+}
+
+export function createDiscordOAuth(config: DiscordOAuthConfig) {
+    return new Discord(
+        config.clientId,
+        config.clientSecret,
+        config.redirectUri
+    )
+}

@@ -6,27 +6,64 @@
  */
 
 import { Hono } from 'hono';
-import routes from './routes';
+import { createLucia } from './lucia';
+import { createDiscordOAuth } from './oauth';
+import { createRoutes } from "./routes";
 
-const auth = new Hono();
+export interface AuthConfig {
+    db: any;
+    email?: (to: string, code: string) => Promise<void>;
+    oauth?: {
+        discord?: {
+            clientId: string;
+            clientSecret: string;
+            redirectUri: string;
+        };
+    };
+    uiPath?: string;  // Optional: where UI files live
+}
 
-// Serve UI static files
-auth.get('/ui/:file', async (c) => {
-    const file = c.req.param('file');
-    if (!/\.(js|css)$/.test(file)) return c.notFound();
+export function createAuth(config: AuthConfig) {
+    const lucia = createLucia(config.db);
+    const discord = config.oauth?.discord
+        ? createDiscordOAuth(config.oauth.discord)
+        : null;
 
-    try {
-        // Bun.file works with relative paths from project root
-        const content = await Bun.file(`./src/auth/ui/${file}`).text();
-        const type = file.endsWith('.css') ? 'text/css' : 'application/javascript';
-        return c.body(content, 200, { 'Content-Type': type });
-    } catch {
-        return c.notFound();
+    const routes = createRoutes({
+        db: config.db,
+        lucia,
+        sendEmail: config.email,
+        discord,
+    });
+
+
+    const auth = new Hono();
+
+    // Serve UI static files
+    if (config.uiPath) {
+        auth.get('/ui/:file', async (c) => {
+            const file = c.req.param('file');
+            if (!/\.(js|css)$/.test(file)) return c.notFound();
+
+            try {
+                // Bun.file works with relative paths from project root
+                const content = await Bun.file(`${config.uiPath}/${file}`).text();
+                const type = file.endsWith('.css') ? 'text/css' : 'application/javascript';
+                return c.body(content, 200, {'Content-Type': type});
+            } catch {
+                return c.notFound();
+            }
+        });
     }
-});
 
-// API routes
-auth.route('/', routes);
+    // API routes
+    auth.route('/', routes);
 
-export default auth;
-export { auth as authRoutes };
+    return {
+        routes: () => auth,
+        lucia,
+    };
+}
+
+export * from './schema';
+export { AuthComponent, AuthAPI, AuthState } from './ui/core.js';

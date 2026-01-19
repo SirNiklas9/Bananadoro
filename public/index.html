@@ -478,7 +478,6 @@
             document.getElementById("settings-overlay").classList.remove("active");
         });
 
-        // ============ DELETE ACCOUNT ============
         document.getElementById('deleteDataBtn').onclick = async () => {
             if (!confirm('Delete all your Bananadoro data? This cannot be undone.')) return;
 
@@ -502,7 +501,7 @@
             if (!confirm('Are you really sure? All data will be lost forever.')) return;
 
             await fetch('/app/data', { method: 'DELETE' });
-            await fetch('/auth/account', { method: 'DELETE' });
+            await AuthAPI.deleteAccount();
 
             alert('Account deleted.');
             window.location.reload();

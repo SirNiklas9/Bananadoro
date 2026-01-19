@@ -2,7 +2,7 @@
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { eq } from 'drizzle-orm'
-import { lucia } from '../auth/lucia'
+import { lucia } from '../index'
 import { db } from '../db'
 import { userSettings, userSessions } from './schema'
 

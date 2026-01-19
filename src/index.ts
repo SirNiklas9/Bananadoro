@@ -3,7 +3,25 @@
 import { file } from "bun";
 import { ServerWebSocket } from "bun";
 import { Hono } from 'hono'
-import { authRoutes } from './auth'
+
+import { createAuth } from './auth'
+import { db } from './db'
+import { sendOTPEmail } from './lib/email'
+
+const auth = createAuth({
+    db,
+    email: sendOTPEmail,
+    oauth: {
+        discord: {
+            clientId: process.env.DISCORD_CLIENT_ID!,
+            clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+            redirectUri: process.env.DISCORD_REDIRECT_URI!,
+        }
+    },
+    uiPath: './src/auth/ui'
+})
+
+export const lucia = auth.lucia
 
 const clients = new Set<ServerWebSocket>();
 
@@ -22,7 +40,7 @@ const socketToSession = new Map<ServerWebSocket<unknown>, string>();
 
 // Server for Authentication
 const app = new Hono()
-app.route('/auth', authRoutes)
+app.route('/auth', auth.routes())
 
 // App Setup
 import appRoutes from './app/routes'
