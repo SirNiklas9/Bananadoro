@@ -1,0 +1,12 @@
+# Compiled host binary — built locally via `go build -o bananadoro-host .`
+bananadoro-host
+bananadoro-host.exe
+
+# Pulp runtime state.
+/data/
+pulp.ctl
+
+# Local sqlite.
+*.db
+*.db-shm
+*.db-wal

@@ -2,12 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="style.css?v=2.1.0">
-    <link rel="stylesheet" href="/auth/ui/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <link rel="stylesheet" href="style.css?v=3.0.0">
+    <link rel="stylesheet" href="/auth-ui/styles.css">
     <link rel="icon" href="/images/BananadoroLogo.png" type="image/png">
+    <!-- PWA: installable on desktop / Android / iOS (16.4+) -->
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bananadoro">
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
     <title>Bananadoro Timer</title>
 </head>
-<body>
+<body data-phase="work">
     <img src="/images/BananadoroLogo.png" alt="BananadoroLogo" style="width: 150px; margin-bottom: 1rem;">
 
     <div id="auth-bar" style="margin-bottom: 1rem;">
@@ -18,49 +27,60 @@
 
     <h1>Bananadoro Timer</h1>
 
-    <div id="login">
-        <hr>
-        <button id="resumeBtn" style="display: none; margin-bottom: 1rem;"></button>
-        <div class="login-options">
-            <button id="createBtn">Create Session</button>
-            <div class="divider"></div>
-            <div class="join-side">
-                <input type="text" id="sessionCode" placeholder="Enter a session code...">
-                <button id="joinBtn">Join</button>
-            </div>
-        </div>
-        <button id="menuSettingsBtn" style="margin-top: 1rem; font-size: 0.8rem; padding: 0.5rem 1rem; opacity: 0.7;">Settings</button>
-    </div>
-
-    <div id="app">
-        <br>
+    <!-- Timer is the default, solo view. It runs entirely client-side off a
+         locally-persisted endsAt — usable signed-out and offline. "Focus
+         together" opens the room overlay; joining a room hands the clock to
+         the server (the troop/sync layer on top of solo). -->
+    <div id="app" class="active">
         <div id="status-bar">
-            <button id="homeBtn" style="background: none; border: none; cursor: pointer; padding: 0.5rem;" title="Back to menu">
+            <button id="homeBtn" hidden style="background: none; border: none; cursor: pointer; padding: 0.5rem;" title="Leave session">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f4d03f" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                     <polyline points="9 22 9 12 15 12 15 22"></polyline>
                 </svg>
             </button>
-            <span id="sessionInfo"></span>
-            <span id="userCount"></span>
-        </div>
-        <hr>
-        <br>
-        <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-            <button id="timerMode">Work</button>
-            <button id="settingsBtn" style="background: none; border: none; cursor: pointer; padding: 0.5rem;">
+            <button id="focusTogetherBtn" title="Focus together">Focus together</button>
+            <span id="sessionInfo" style="display:none;"></span>
+            <span id="userCount" style="display:none;"></span>
+            <button id="settingsBtn" style="background: none; border: none; cursor: pointer; padding: 0.5rem;" title="Settings">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#f4d03f">
                     <path d="M21.32 9.55l-1.89-.63a7.44 7.44 0 0 0-.65-1.57l.89-1.78a1 1 0 0 0-.17-1.15l-1.42-1.41a1 1 0 0 0-1.15-.17l-1.78.89a7.44 7.44 0 0 0-1.57-.65l-.63-1.89A1 1 0 0 0 13 .5h-2a1 1 0 0 0-.95.68l-.63 1.89a7.44 7.44 0 0 0-1.57.65l-1.78-.89a1 1 0 0 0-1.15.17L3.51 4.41a1 1 0 0 0-.17 1.15l.89 1.78a7.44 7.44 0 0 0-.65 1.57l-1.89.63A1 1 0 0 0 1 10.5v2a1 1 0 0 0 .68.95l1.89.63a7.44 7.44 0 0 0 .65 1.57l-.89 1.78a1 1 0 0 0 .17 1.15l1.41 1.41a1 1 0 0 0 1.15.17l1.78-.89a7.44 7.44 0 0 0 1.57.65l.63 1.89a1 1 0 0 0 .95.69h2a1 1 0 0 0 .95-.68l.63-1.89a7.44 7.44 0 0 0 1.57-.65l1.78.89a1 1 0 0 0 1.15-.17l1.41-1.41a1 1 0 0 0 .17-1.15l-.89-1.78a7.44 7.44 0 0 0 .65-1.57l1.89-.63a1 1 0 0 0 .69-.95v-2a1 1 0 0 0-.68-.95z"/>
                     <circle cx="12" cy="11.5" r="3" fill="#1a1a1a"/>
                 </svg>
             </button>
         </div>
-        <div id="timer">25:00</div>
+
+        <div id="awayNotice" hidden role="status"></div>
+
+        <button id="timerMode" title="Switch Work / Break">Work</button>
+        <div id="roundInfo" aria-hidden="true"></div>
+        <div id="timer" role="timer" aria-live="off">25:00</div>
 
         <div class="button-row">
             <button id="start">Start</button>
             <button id="stop">Stop</button>
             <button id="reset">Reset</button>
+            <button id="skip" title="Skip to next phase (S)">Skip</button>
+        </div>
+
+        <div id="continueRow" hidden>
+            <button id="continueBtn">Start next phase</button>
+        </div>
+    </div>
+
+    <!-- Focus together (rooms): the opt-in troop layer. -->
+    <div id="room-overlay">
+        <div id="room-panel">
+            <h3>Focus together</h3>
+            <p style="opacity:0.7; font-size:0.85rem; margin:0;">Share a code so a group counts down on the same clock.</p>
+            <button id="resumeBtn" hidden></button>
+            <button id="createBtn">Create session</button>
+            <div class="divider-h">or join by code</div>
+            <div class="join-side">
+                <input type="text" id="sessionCode" placeholder="Enter a session code..." autocomplete="off">
+                <button id="joinBtn">Join</button>
+            </div>
+            <button id="closeRoom" style="opacity:0.7; font-size:0.85rem;">Cancel</button>
         </div>
     </div>
 
@@ -74,6 +94,15 @@
             <label>Break Duration (minutes)</label>
             <input type="number" id="breakDuration" value="5" min="0.1" max="60" step="0.1">
 
+            <label>Long Break Duration (minutes)</label>
+            <input type="number" id="longBreakDuration" value="15" min="0.1" max="120" step="0.1">
+
+            <label>Long Break Every (work rounds)</label>
+            <input type="number" id="longBreakEvery" value="4" min="0" max="12" step="1">
+
+            <label style="flex-direction: row; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="autoStart" checked> Auto-start next phase
+            </label>
             <label style="flex-direction: row; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="soundEnabled" checked> Sound
             </label>
@@ -106,9 +135,9 @@
     </div>
 
     <script type="module">
-        import { AuthUI, AuthAPI, AuthState } from '/auth/ui/index.js';
+        import { AuthUI, AuthAPI, AuthState } from '/auth-ui/index.js';
 
-        const auth = new AuthUI({
+        const auth = await new AuthUI({
             onAuthChange: async (user) => {
                 if (user) {
                     document.getElementById('user-info').innerHTML =
@@ -116,36 +145,33 @@
                     document.getElementById('authLink').style.display = 'none';
                     document.getElementById('signOutLink').style.display = 'inline';
 
-                    // Load settings
-                    const res = await fetch('/app/settings');
+                    // Load settings (signed-in → server wins on load).
+                    const res = await authFetch('/app/me/settings');
                     const settings = await res.json();
                     if (settings) {
-                        document.getElementById('workDuration').value = settings.workDuration;
-                        document.getElementById('breakDuration').value = settings.breakDuration;
-                        document.getElementById('soundEnabled').checked = settings.soundEnabled;
-                        document.getElementById('notificationsEnabled').checked = settings.notificationsEnabled;
-                        localStorage.setItem('workDuration', settings.workDuration);
-                        localStorage.setItem('breakDuration', settings.breakDuration);
+                        if (window.applyLoadedSettings) window.applyLoadedSettings(settings);
                     }
 
-                    // Check saved session
-                    const sessRes = await fetch('/app/session');
+                    // Offer to resume the last room (in the Focus-together overlay).
+                    const sessRes = await authFetch('/app/me/session');
                     const saved = await sessRes.json();
-                    if (saved) {
-                        document.getElementById('resumeBtn').style.display = 'inline-block';
-                        document.getElementById('resumeBtn').textContent = `Resume (${saved})`;
-                        document.getElementById('resumeBtn').onclick = () => {
-                            sessionCode = saved;
-                            document.getElementById('login').style.display = 'none';
-                            document.getElementById('app').style.display = 'block';
-                            connectWebSocket();
-                        };
+                    const rb = document.getElementById('resumeBtn');
+                    if (saved && rb) {
+                        rb.hidden = false;
+                        rb.textContent = `Resume (${saved})`;
+                        rb.onclick = () => { if (window.joinRoom) window.joinRoom(saved); };
                     }
+
+                    // The personal timer is now SERVER-owned: switch to account mode
+                    // (renders server state, registers push). See ARCHITECTURE.md.
+                    window.enterAccountMode?.();
                 } else {
                     document.getElementById('user-info').textContent = '';
                     document.getElementById('authLink').style.display = 'inline';
                     document.getElementById('signOutLink').style.display = 'none';
-                    document.getElementById('resumeBtn').style.display = 'none';
+                    const rb = document.getElementById('resumeBtn');
+                    if (rb) rb.hidden = true;
+                    window.exitAccountMode?.();   // back to local-first solo
                 }
             }
         }).init();
@@ -159,390 +185,722 @@
         document.getElementById('authLink').onclick = () => auth.showAuth();
         document.getElementById('signOutLink').onclick = () => auth.logout();
 
-        // TOTP in settings
-        window.updateTotpBtn = async function updateTotpBtn() {
+        // 2FA button — shown only when this deployment exposes the "totp"
+        // method (Bananauth advertises it via /auth/config). Not built yet,
+        // so today it stays hidden; flip on once Bananauth supports TOTP.
+        window.updateTotpBtn = function updateTotpBtn() {
             const btn = document.getElementById('totpSettingsBtn');
-            if (!AuthState.isLoggedIn()) { btn.style.display = 'none'; return; }
-
+            if (!btn) return;
+            const supported = window.auth?.hasMethod?.('totp');
+            if (!supported || !AuthState.isLoggedIn()) { btn.style.display = 'none'; return; }
             btn.style.display = 'block';
-            const status = await AuthAPI.totpStatus();
-
-            if (status.enabled) {
-                btn.textContent = `Disable 2FA (${status.remainingRecoveryCodes} codes left)`;
-                btn.onclick = async () => {
-                    const code = prompt('Enter authenticator code to disable 2FA:');
-                    if (!code) return;
-                    const res = await AuthAPI.totpDisable(code);
-                    if (res.success) { alert('2FA disabled'); updateTotpBtn(); }
-                    else alert(res.error || 'Invalid code');
-                };
-            } else {
-                btn.textContent = 'Enable 2FA';
-                btn.onclick = () => window.auth.showTOTPSetup();
-            }
+            btn.textContent = 'Enable 2FA';
+            btn.onclick = () => window.auth.showTOTPSetup();
         }
 
         // Danger zone visibility
-        function updateDangerZone() {
+        window.updateDangerZone = function updateDangerZone() {
             document.getElementById('dangerZone').style.display = AuthState.isLoggedIn() ? 'block' : 'none';
             updateTotpBtn();
         }
-
-        document.getElementById('settingsBtn')?.addEventListener('click', updateDangerZone);
-        document.getElementById('menuSettingsBtn')?.addEventListener('click', updateDangerZone);
     </script>
 
     <script>
+        // ============================================================
+        // Bananadoro timer — local-first solo, rooms as an overlay.
+        //
+        // Authority model:
+        //   authority === 'local'  → the solo timer drives. State lives in
+        //       localStorage as an absolute endsAt; the display is derived
+        //       from (endsAt − now) and survives reload/offline.
+        //   authority === 'server' → a shared room drives. The cell owns the
+        //       clock and broadcasts state over SSE; commands are POSTs.
+        // Both produce the same shape, so one render path serves both.
+        // ============================================================
+
+        const TICK_MS = 250;
+        // If the wall-clock crosses a phase boundary while the page was hidden
+        // or the JS loop was frozen (background/throttle/sleep) for longer than
+        // this, the phase ended while away → present a clean state instead of
+        // replaying the cycles that elapsed.
+        const AWAY_GAP_MS = 2500;
+        const nowSec = () => Math.floor(Date.now() / 1000);
+
         const sounds = {
             start: new Audio("/sounds/start.mp3"),
             stop: new Audio("/sounds/stop.mp3"),
             reset: new Audio("/sounds/reset.mp3"),
-            simpleComplete: new Audio("/sounds/simple-ding.mp3"),
-            complexComplete: new Audio("/sounds/complex-ding.mp3"),
-            }
-
-        let ws;
-        let sessionCode;
-        let mode = 'work';
-
-        let isAppVisible = true;
-        let lastTime = null;
-
-        const savedWork = localStorage.getItem("workDuration");
-        const savedBreak = localStorage.getItem("breakDuration");
-        if (savedWork) document.getElementById("workDuration").value = savedWork;
-        if (savedBreak) document.getElementById("breakDuration").value = savedBreak;
-
-        if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.App) {
-            Capacitor.Plugins.App.addListener('appStateChange', (state) => {
-                isAppVisible = state.isActive;
-
-                // Reconnect if coming back and disconnected
-                if (state.isActive && sessionCode) {
-                    // Check if we need to reconnect
-                    if (!ws || ws.readyState !== WebSocket.OPEN) {
-                        // Don't call connectWebSocket directly - it might race
-                        // Let the existing onclose handler deal with it, or:
-                        if (!ws || ws.readyState === WebSocket.CLOSED) {
-                            connectWebSocket();
-                        }
-                        // If CONNECTING, just wait - it's already trying
-                    }
-                }
-            });
-        } else {
-            // Browser fallback
-            document.addEventListener('visibilitychange', () => {
-                isAppVisible = !document.hidden;
-                if (!document.hidden && ws && ws.readyState !== WebSocket.OPEN) {
-                    connectWebSocket();
-                }
-            });
-        }
-
-        function connectWebSocket() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}`);
-
-            ws.onopen = () => {
-                if (sessionCode) {
-                    ws.send(JSON.stringify({type: "join", sessionCode: sessionCode}));
-                    updateStatusBar(sessionCode)
-                } else {
-                    ws.send(JSON.stringify({type: 'create'}))
-                }
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type == "created") {
-                    sessionCode = data.sessionCode;
-                    localStorage.setItem("sessionCode", sessionCode);
-                    updateStatusBar(sessionCode, 1)
-
-                    // Save to account if logged in
-                    fetch('/app/session', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionCode: sessionCode })
-                    });
-
-                    // Send your saved durations to initialize the session
-                    const workDuration = parseFloat(localStorage.getItem("workDuration")) || 25;
-                    const breakDuration = parseFloat(localStorage.getItem("breakDuration")) || 5;
-
-                    ws.send(JSON.stringify({
-                        type: "settings",
-                        workDuration: workDuration,
-                        breakDuration: breakDuration
-                    }));
-
-                    if (window.AuthState?.isLoggedIn()) {
-                        document.getElementById('resumeBtn').style.display = 'inline-block';
-                        document.getElementById('resumeBtn').textContent = `Resume (${sessionCode})`;
-                        document.getElementById('resumeBtn').onclick = () => {
-                            sessionCode = data.sessionCode;
-                            document.getElementById('login').style.display = 'none';
-                            document.getElementById('app').style.display = 'block';
-                            connectWebSocket();
-                        };
-                    }
-                }
-
-                if (data.type == "tick") {
-                    // Check elements exist before updating
-                    const timer = document.getElementById('timer');
-                    const timerMode = document.getElementById('timerMode');
-                    const sessionInfo = document.getElementById("sessionInfo");
-
-                    // Only update if the app view is visible (elements exist)
-                    if (!timer || !sessionInfo) return;
-
-                        const minutes = Math.floor(data.time / 60);
-                        const seconds = data.time % 60;
-                        timer.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                        document.title = `${minutes}:${seconds < 10 ? '0' : ''}${seconds} - Bananadoro`;
-                        timerMode.textContent =
-                            data.mode === "work" ? "Work" : "Break";
-                        updateStatusBar(sessionCode, data.userCount)
-                    }
-
-                if (data.type == 'error') {
-                    alert(data.message);
-
-                    // Clear saved session if it doesn't exist anymore
-                    fetch('/app/session', { method: 'DELETE' });
-
-                    // Hide login, show app
-                    document.getElementById("login").style.display = "block";
-                    document.getElementById("app").style.display = "none";
-
-                    // Clear the resume button
-                    document.getElementById('resumeBtn').style.display = 'none';
-                }
-
-                if (data.time == 0 && lastTime !== null && lastTime > 0) {
-                    const soundEnabled = localStorage.getItem("soundEnabled") !== "false";
-                    const notificationsEnabled = localStorage.getItem("notificationsEnabled") !== "false";
-
-                    let title = data.mode === "work" ? "Work Session Complete!" : "Break Session Complete!";
-                    let body = data.mode === "work" ? "Time for a break!" : "Time to work!";
-
-                    // Play sound only if visible
-                    if (soundEnabled) {
-                        sounds.complexComplete.play();
-                    }
-
-                    if (notificationsEnabled) {
-                        // Tauri (Windows/Mac/Linux desktop)
-                        if (window.__TAURI__?.notification) {
-                            window.__TAURI__.notification.sendNotification({
-                                title: title,
-                                body: body,
-                                icon: '/images/BananadoroLogo.png'
-                            });
-                        }
-
-                        // Native notification (Capacitor)
-                        if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.LocalNotifications) {
-                            Capacitor.Plugins.LocalNotifications.schedule({
-                                notifications: [{
-                                    title: title,
-                                    body: body,
-                                    id: Math.floor(Math.random() * 100000)
-                                }]
-                            });
-                        }
-                        // Browser notification fallback
-                        else if (typeof Notification !== 'undefined' && Notification.permission === "granted") {
-                            new Notification(title, {
-                                body: body,
-                                icon: "/images/BananadoroLogo.png"
-                            });
-                        }
-                    }
-                }
-
-                lastTime = data.time;
-            }
-
-            ws.onclose = () => {
-                document.getElementById("sessionInfo").textContent = "Disconnected - reconnecting...";
-                setTimeout(() => {
-                    console.log("Attempting reconnect, sessionCode:", sessionCode);
-                    if (sessionCode) {
-                        connectWebSocket();
-                    }
-                }, 2000);
-            }
-        }
-
-        document.getElementById("createBtn").onclick = () => {
-            if (!sessionCode) {
-
-                if (typeof Notification !== 'undefined' && Notification.permission === "default") {
-                    Notification.requestPermission();
-                }
-
-                // Request native notification permission
-                if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.LocalNotifications) {
-                    Capacitor.Plugins.LocalNotifications.requestPermissions();
-                }
-
-                // Hide login, show app
-                document.getElementById("login").style.display = "none";
-                document.getElementById("app").style.display = "block";
-
-                connectWebSocket();
-            }
-        }
-
-        document.getElementById("joinBtn").onclick = () => {
-            sessionCode = document.getElementById("sessionCode").value.trim();
-            if (!sessionCode) return;
-
-            // Save to account if logged in
-            fetch('/app/session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionCode: sessionCode })
-            });
-
-            if (typeof Notification !== 'undefined' && Notification.permission === "default") {
-                Notification.requestPermission();
-            }
-
-            // Request native notification permission
-            if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.LocalNotifications) {
-                Capacitor.Plugins.LocalNotifications.requestPermissions();
-            }
-
-            // Hide login, show app
-            document.getElementById("login").style.display = "none";
-            document.getElementById("app").style.display = "block";
-
-            connectWebSocket();
+            workEnd: new Audio("/sounds/complex-ding.mp3"),  // focus complete → emphatic cue
+            breakEnd: new Audio("/sounds/simple-ding.mp3"),  // break complete → softer cue
         };
 
-        function updateStatusBar(code, userCount) {
-            document.getElementById("sessionInfo").innerHTML = `Connected to session <span id="copyArea" style="cursor: pointer;"><strong>${code}</strong> <span id="copyIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span></span>`;
+        // ---- Settings (local source of truth, mirrored to the server when signed in) ----
+        function loadSettings() {
+            const num = (k, d) => { const v = parseFloat(localStorage.getItem(k)); return Number.isFinite(v) ? v : d; };
+            return {
+                workMin: num('workDuration', 25),
+                breakMin: num('breakDuration', 5),
+                longBreakMin: num('longBreakDuration', 15),
+                longBreakEvery: Math.max(0, Math.round(num('longBreakEvery', 4))),
+                autoStart: localStorage.getItem('autoStart') !== 'false',
+                sound: localStorage.getItem('soundEnabled') !== 'false',
+                notifications: localStorage.getItem('notificationsEnabled') !== 'false',
+            };
+        }
 
-            document.getElementById("userCount").innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${userCount}`;
+        function phaseSecs(mode, s) {
+            if (mode === 'work') return Math.max(1, Math.round(s.workMin * 60));
+            if (mode === 'longBreak') return Math.max(1, Math.round(s.longBreakMin * 60));
+            return Math.max(1, Math.round(s.breakMin * 60));
+        }
 
-            document.getElementById("copyArea").addEventListener("click", () => {
-                navigator.clipboard.writeText(code);
-                document.getElementById("copyIcon").innerHTML = " ✓";
-                setTimeout(() => {
-                    document.getElementById("copyIcon").innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-                }, 1000);
+        function phaseLabel(mode) {
+            return mode === 'work' ? 'Work' : mode === 'longBreak' ? 'Long Break' : 'Break';
+        }
+
+        // ---- Local solo state ----
+        const LS_STATE = 'soloState';
+        function freshLocal() {
+            const s = loadSettings();
+            return { mode: 'work', running: false, endsAt: 0, remaining: phaseSecs('work', s), round: 0, awaiting: false };
+        }
+        function loadLocal() {
+            try { const o = JSON.parse(localStorage.getItem(LS_STATE)); if (o && o.mode) return o; } catch (_) {}
+            return freshLocal();
+        }
+        function saveLocal() { if (authority === 'local') localStorage.setItem(LS_STATE, JSON.stringify(local)); }
+
+        // authority: 'local'  = signed-out solo (device owns the clock)
+        //            'account'= signed-in personal timer (SERVER owns the clock)
+        //            'server' = anonymous "Focus together" room
+        let authority = 'local';
+        let local = loadLocal();
+        let account = null;          // signed-in server-authoritative timer state
+        let server = null;           // latest authoritative room state, when in a room
+        let serverOffsetMs = 0;      // dead-reckoning clock-skew correction (serverNow - Date.now)
+        let acctFetching = false;
+        let es = null;               // SSE stream
+        let sessionCode = null;
+        let phaseEndedFired = false; // phase-end debounce (room nudge / account boundary)
+        let lastTickAt = Date.now();
+        let wakeLock = null;
+
+        function activeState() {
+            if (authority === 'server') return server;
+            if (authority === 'account') return account;
+            return local;
+        }
+        function isFocusRunning() { const st = activeState(); return !!(st && st.running && st.mode === 'work'); }
+
+        // The device extrapolates against its own clock when it owns the timer
+        // (local), and against the server's clock (offset-corrected) when the
+        // server is the authority (account/room) — dead-reckoning skew fix.
+        function reckonNowSec() {
+            if (authority === 'local') return Math.floor(Date.now() / 1000);
+            return Math.floor((Date.now() + serverOffsetMs) / 1000);
+        }
+
+        // authFetch attaches a Bearer token when the auth client exposes one.
+        function authFetch(url, opts = {}) {
+            const a = window.AuthState;
+            const t = a && (typeof a.token === 'function' ? a.token() : a.token);
+            if (t) opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${t}` };
+            return fetch(url, opts);
+        }
+
+        // ---- Wake lock: hold the screen awake only during an active focus round ----
+        async function acquireWakeLock() {
+            try {
+                if ('wakeLock' in navigator && !wakeLock && !document.hidden) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => { wakeLock = null; });
+                }
+            } catch (_) { /* denied / unsupported — non-fatal */ }
+        }
+        function releaseWakeLock() { try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (_) {} }
+        function syncWakeLock() { if (isFocusRunning()) acquireWakeLock(); else releaseWakeLock(); }
+
+        // ---- Phase cues ----
+        function playEndCue(endingMode) {
+            if (!loadSettings().sound) return;
+            (endingMode === 'work' ? sounds.workEnd : sounds.breakEnd).play().catch(() => {});
+        }
+        function notifyPhase(endingMode) {
+            if (!loadSettings().notifications) return;
+            const title = endingMode === 'work' ? 'Focus complete!' : 'Break complete!';
+            const body = endingMode === 'work' ? 'Time for a break.' : 'Back to focus.';
+            if (window.__TAURI__?.notification) {
+                window.__TAURI__.notification.sendNotification({ title, body, icon: '/images/BananadoroLogo.png' });
+            } else if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.LocalNotifications) {
+                Capacitor.Plugins.LocalNotifications.schedule({ notifications: [{ title, body, id: Math.floor(nowSec() % 100000) }] });
+            } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/images/BananadoroLogo.png' });
+            }
+        }
+        function maybeAskNotify() {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission();
+            if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.LocalNotifications) Capacitor.Plugins.LocalNotifications.requestPermissions();
+        }
+
+        // ---- Phase progression (solo) ----
+        // nextPhase returns the phase that follows `mode`. `round` is purely the
+        // long-break cadence counter — work intervals since the last long break,
+        // so we know when to insert one. It is NOT a focus score and is not
+        // tracked anywhere; a finished interval advances it, a skip does not.
+        function nextPhase(mode, round, finished, s) {
+            if (mode === 'work') {
+                const r = finished ? round + 1 : round;
+                const long = finished && s.longBreakEvery > 0 && r % s.longBreakEvery === 0;
+                return { mode: long ? 'longBreak' : 'break', round: r };
+            }
+            if (mode === 'longBreak') return { mode: 'work', round: 0 };
+            return { mode: 'work', round };
+        }
+
+        // advanceLocalPhase moves to the next phase. finished=true when a work
+        // interval actually ran out (advances the cadence); skips pass false.
+        function advanceLocalPhase(finished) {
+            const s = loadSettings();
+            const np = nextPhase(local.mode, local.round, finished, s);
+            local.mode = np.mode;
+            local.round = np.round;
+            local.awaiting = false;
+            phaseEndedFired = false;
+            const secs = phaseSecs(local.mode, s);
+            if (s.autoStart) {
+                local.running = true;
+                local.endsAt = nowSec() + secs;
+                local.remaining = secs;
+            } else {
+                local.running = false;
+                local.endsAt = 0;
+                local.remaining = secs;
+                local.awaiting = true;   // one-tap to continue
+            }
+        }
+
+        // A phase boundary was crossed locally. If the page was live, ring/notify
+        // and roll to the next phase. If the page was hidden/asleep across the
+        // boundary, don't machine-gun through the phases that elapsed while away
+        // — present a clean, paused state on return. (Pure timer behavior; the
+        // timer scores nothing.)
+        //
+        // Future seam: a finished work interval is exactly where the timer would
+        // emit a 'focus-completed' event for a SEPARATE credit/progression
+        // service to consume. The timer stays agnostic — it never awards or
+        // tracks anything itself.
+        function handleLocalBoundary(gapMs) {
+            const live = !document.hidden && gapMs < AWAY_GAP_MS;
+            const endingMode = local.mode;
+            if (live) {
+                playEndCue(endingMode);
+                notifyPhase(endingMode);
+                advanceLocalPhase(true);
+                hideAwayNotice();
+            } else {
+                const s = loadSettings();
+                local.running = false;
+                local.awaiting = false;
+                local.endsAt = 0;
+                local.remaining = phaseSecs(local.mode, s); // present current phase cleanly
+                phaseEndedFired = false;
+                showAwayNotice(endingMode);
+            }
+            saveLocal();
+        }
+
+        function showAwayNotice(endingMode) {
+            const el = document.getElementById('awayNotice');
+            if (!el) return;
+            el.textContent = `${phaseLabel(endingMode)} ended while you were away. Start when you're ready.`;
+            el.hidden = false;
+        }
+        function hideAwayNotice() { const el = document.getElementById('awayNotice'); if (el) el.hidden = true; }
+
+        // ---- Render ----
+        function computeRemaining() {
+            const st = activeState();
+            if (!st) return 0;
+            if (st.running) return Math.max(0, st.endsAt - reckonNowSec());
+            return st.remaining || 0;
+        }
+
+        function render() {
+            const st = activeState();
+            if (!st) return;
+            const t = computeRemaining();
+            const m = Math.floor(t / 60), s = t % 60;
+            const disp = `${m}:${s < 10 ? '0' : ''}${s}`;
+            document.getElementById('timer').textContent = disp;
+            document.title = `${disp} · ${phaseLabel(st.mode)} — Bananadoro`;
+            document.getElementById('timerMode').textContent = phaseLabel(st.mode);
+            document.body.dataset.phase = st.mode;
+
+            // Pomodoro progress dots (cycle position toward the long break).
+            const cfg = loadSettings();
+            const ri = document.getElementById('roundInfo');
+            if (ri) {
+                const every = (st.longBreakEvery != null) ? st.longBreakEvery : cfg.longBreakEvery;
+                const round = st.round || 0;
+                if (every > 0) {
+                    const done = round % every;
+                    let dots = '';
+                    for (let i = 0; i < every; i++) dots += i < done ? '●' : '○';
+                    ri.textContent = dots;
+                } else ri.textContent = '';
+            }
+
+            // Start/pause label + one-tap continue (solo, auto-start off).
+            const startBtn = document.getElementById('start');
+            if (startBtn) startBtn.textContent = st.running ? 'Pause' : 'Start';
+            const cont = document.getElementById('continueRow');
+            if (cont) cont.hidden = !(authority === 'local' && st.awaiting);
+
+            syncWakeLock();
+        }
+
+        // The single ticker. Detects local phase boundaries (including ones
+        // crossed while throttled) and, in a room, nudges the server once.
+        function tick() {
+            const nowMs = Date.now();
+            const gapMs = nowMs - lastTickAt;
+            lastTickAt = nowMs;
+            const st = activeState();
+            if (st && st.running && reckonNowSec() >= st.endsAt) {
+                if (authority === 'local') {
+                    handleLocalBoundary(gapMs);
+                } else if (authority === 'account') {
+                    handleAccountBoundary();
+                } else if (!phaseEndedFired) {
+                    phaseEndedFired = true;
+                    playEndCue(st.mode);
+                    notifyPhase(st.mode);
+                    fetch(`/app/session/${encodeURIComponent(sessionCode)}/phase-ended`, { method: 'POST' });
+                }
+            }
+            render();
+        }
+        setInterval(tick, TICK_MS);
+
+        // ---- Commands (route to local state or the room) ----
+        function startTimer() {
+            maybeAskNotify();
+            if (authority === 'server') { roomCmd('start'); if (loadSettings().sound) sounds.start.play().catch(() => {}); return; }
+            if (authority === 'account') { if (loadSettings().sound) sounds.start.play().catch(() => {}); acctCmd('start'); return; }
+            if (local.running) return;
+            const s = loadSettings();
+            if (!local.remaining || local.remaining <= 0) local.remaining = phaseSecs(local.mode, s);
+            local.endsAt = nowSec() + local.remaining;
+            local.running = true;
+            local.awaiting = false;
+            phaseEndedFired = false;
+            hideAwayNotice();
+            if (s.sound) sounds.start.play().catch(() => {});
+            saveLocal(); render();
+        }
+        function pauseTimer() {
+            if (authority === 'server') { roomCmd('stop'); if (loadSettings().sound) sounds.stop.play().catch(() => {}); return; }
+            if (authority === 'account') { if (loadSettings().sound) sounds.stop.play().catch(() => {}); acctCmd('stop'); return; }
+            if (!local.running) return;
+            local.remaining = Math.max(0, local.endsAt - nowSec());
+            local.running = false;
+            if (loadSettings().sound) sounds.stop.play().catch(() => {});
+            saveLocal(); render();
+        }
+        function resetTimer() {
+            if (isFocusRunning() && !confirm('Reset the current focus round?')) return;
+            if (authority === 'server') { roomCmd('reset'); if (loadSettings().sound) sounds.reset.play().catch(() => {}); return; }
+            if (authority === 'account') { if (loadSettings().sound) sounds.reset.play().catch(() => {}); hideAwayNotice(); acctCmd('reset'); return; }
+            local.running = false;
+            local.awaiting = false;
+            local.endsAt = 0;
+            local.remaining = phaseSecs(local.mode, loadSettings());
+            phaseEndedFired = false;
+            hideAwayNotice();
+            if (loadSettings().sound) sounds.reset.play().catch(() => {});
+            saveLocal(); render();
+        }
+        function skipPhase() {
+            if (isFocusRunning() && !confirm('Skip to the next phase?')) return;
+            if (authority === 'server') { roomCmd('mode'); return; }
+            if (authority === 'account') { hideAwayNotice(); acctCmd('skip'); return; }
+            advanceLocalPhase(false);   // skipping doesn't advance the long-break cadence
+            hideAwayNotice();
+            saveLocal(); render();
+        }
+        function toggleModeManual() {
+            if (authority === 'server') { roomCmd('mode'); return; }
+            if (authority === 'account') { skipPhase(); return; } // account has no manual toggle; advance instead
+            local.mode = local.mode === 'work' ? 'break' : 'work';
+            local.running = false;
+            local.awaiting = false;
+            local.endsAt = 0;
+            local.remaining = phaseSecs(local.mode, loadSettings());
+            phaseEndedFired = false;
+            hideAwayNotice();
+            saveLocal(); render();
+        }
+
+        // ---- Account mode: the server owns the clock; the device reckons + reconciles ----
+        function applyAccount(st) {
+            if (!st) return;
+            account = st;
+            if (typeof st.serverNow === 'number') serverOffsetMs = st.serverNow * 1000 - Date.now();
+            phaseEndedFired = false;
+            // Reflect the server timer's durations in the settings inputs (sound /
+            // notifications stay client-local — they're foreground-only prefs).
+            const set = (id, v) => { const e = document.getElementById(id); if (e && v != null) e.value = v; };
+            set('workDuration', +(st.workSecs / 60).toFixed(2));
+            set('breakDuration', +(st.breakSecs / 60).toFixed(2));
+            set('longBreakDuration', +(st.longBreakSecs / 60).toFixed(2));
+            set('longBreakEvery', st.longBreakEvery);
+            const as = document.getElementById('autoStart'); if (as) as.checked = !!st.autoStart;
+            render();
+        }
+        function acctCmd(path) {
+            return authFetch('/app/timer/' + path, { method: 'POST' })
+                .then(r => r.ok ? r.json() : null)
+                .then(st => { if (st) applyAccount(st); })
+                .catch(() => { /* offline — reconcile on reconnect */ });
+        }
+        function refetchAccount() {
+            if (authority !== 'account' || acctFetching) return Promise.resolve();
+            acctFetching = true;
+            return authFetch('/app/timer').then(r => r.ok ? r.json() : null)
+                .then(st => { if (st) applyAccount(st); })
+                .catch(() => {})
+                .finally(() => { acctFetching = false; });
+        }
+        // At a deadline the SERVER has already advanced (its scheduler) — ding once
+        // locally for the foreground, then snap to the authoritative new phase.
+        function handleAccountBoundary() {
+            if (!phaseEndedFired) { phaseEndedFired = true; playEndCue(account.mode); notifyPhase(account.mode); }
+            refetchAccount();
+        }
+
+        async function enterAccountMode() {
+            if (authority === 'server') return; // in a room — switch when they leave it
+            const res = await authFetch('/app/timer').catch(() => null);
+            if (res && res.ok) {
+                authority = 'account';
+                applyAccount(await res.json());
+                updateChrome();
+            }
+            setupPush();
+        }
+        function exitAccountMode() {
+            if (authority === 'account') {
+                authority = 'local';
+                account = null;
+                local = loadLocal();
+                render();
+                updateChrome();
+            }
+        }
+        window.enterAccountMode = enterAccountMode;
+        window.exitAccountMode = exitAccountMode;
+
+        // ---- Web Push subscription (signed in) ----
+        function urlB64ToUint8(s) {
+            const pad = '='.repeat((4 - (s.length % 4)) % 4);
+            const raw = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/'));
+            return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+        }
+        async function setupPush() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+            try {
+                const reg = await navigator.serviceWorker.register('/sw.js');
+                if (typeof Notification !== 'undefined' && Notification.permission === 'default') await Notification.requestPermission();
+                if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+                let sub = await reg.pushManager.getSubscription();
+                if (!sub) {
+                    const vapid = await (await fetch('/app/vapid')).json();
+                    sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(vapid.publicKey) });
+                }
+                const j = sub.toJSON();
+                await authFetch('/app/devices', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys }),
+                });
+            } catch (e) { console.warn('push setup failed', e); }
+        }
+
+        document.getElementById('start').onclick = () => activeState()?.running ? pauseTimer() : startTimer();
+        document.getElementById('stop').onclick = pauseTimer;
+        document.getElementById('reset').onclick = resetTimer;
+        document.getElementById('skip').onclick = skipPhase;
+        document.getElementById('timerMode').onclick = toggleModeManual;
+        document.getElementById('continueBtn').onclick = startTimer;
+
+        // ---- Keyboard shortcuts (ignored while typing or with a modal open) ----
+        function modalOpen() {
+            return ['settings-overlay', 'room-overlay'].some(id => document.getElementById(id)?.classList.contains('active'))
+                || document.querySelector('.active[id$="-overlay"]');
+        }
+        document.addEventListener('keydown', (e) => {
+            const tag = (e.target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+            if (modalOpen()) return;
+            if (e.code === 'Space') { e.preventDefault(); activeState()?.running ? pauseTimer() : startTimer(); }
+            else if (e.key === 'r' || e.key === 'R') { resetTimer(); }
+            else if (e.key === 's' || e.key === 'S') { skipPhase(); }
+        });
+
+        // ---- Rooms (the "Focus together" overlay) ----
+        function updateChrome() {
+            const inRoom = authority === 'server';
+            document.getElementById('focusTogetherBtn').hidden = inRoom;
+            document.getElementById('homeBtn').hidden = !inRoom;
+            document.getElementById('sessionInfo').style.display = inRoom ? '' : 'none';
+            document.getElementById('userCount').style.display = inRoom ? '' : 'none';
+        }
+
+        function applyServerState(st) {
+            server = st;
+            sessionCode = st.code || sessionCode;
+            phaseEndedFired = false;
+            updateRoomBar(sessionCode, st.userCount);
+            render();
+        }
+
+        async function createRoom() {
+            maybeAskNotify();
+            const s = loadSettings();
+            const res = await fetch('/app/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workMinutes: s.workMin, breakMinutes: s.breakMin, longBreakMinutes: s.longBreakMin, longBreakEvery: s.longBreakEvery })
+            });
+            const st = await res.json();
+            authority = 'server';
+            updateChrome();
+            applyServerState(st);
+            localStorage.setItem('sessionCode', sessionCode);
+            openStream();
+            persistRoomPref(sessionCode);
+            closeRoomOverlay();
+        }
+
+        async function joinRoom(code) {
+            const res = await fetch(`/app/session/${encodeURIComponent(code)}`);
+            if (!res.ok) { alert('Session not found'); return; }
+            sessionCode = code;
+            authority = 'server';
+            updateChrome();
+            applyServerState(await res.json());
+            openStream();
+            persistRoomPref(code);
+            closeRoomOverlay();
+        }
+        window.joinRoom = joinRoom;
+
+        function persistRoomPref(code) {
+            authFetch('/app/me/session', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionCode: code })
+            }).catch(() => {});
+            const rb = document.getElementById('resumeBtn');
+            if (rb && window.AuthState?.isLoggedIn()) {
+                rb.hidden = false; rb.textContent = `Resume (${code})`;
+                rb.onclick = () => joinRoom(code);
+            }
+        }
+
+        function openStream() {
+            if (es) es.close();
+            es = new EventSource(`/app/session/${encodeURIComponent(sessionCode)}/stream`);
+            es.addEventListener('state', (e) => applyServerState(JSON.parse(e.data)));
+            es.onopen = () => { if (sessionCode) resync(); };
+            es.onerror = () => { const info = document.getElementById('sessionInfo'); if (info && authority === 'server') info.textContent = 'Reconnecting...'; };
+        }
+
+        async function resync() {
+            if (authority !== 'server' || !sessionCode) return;
+            try {
+                const res = await fetch(`/app/session/${encodeURIComponent(sessionCode)}`);
+                if (res.ok) applyServerState(await res.json());
+                if (!es || es.readyState === EventSource.CLOSED) openStream();
+            } catch (_) {}
+        }
+
+        function leaveRoom() {
+            if (isFocusRunning() && !confirm('Leave the session? A focus round is running.')) return;
+            if (es) { es.close(); es = null; }
+            server = null;
+            sessionCode = null;
+            authority = 'local';
+            phaseEndedFired = false;
+            if (window.AuthState?.isLoggedIn()) {
+                enterAccountMode();   // back to your personal (server-owned) timer
+            } else {
+                local = loadLocal();  // fall back to the solo timer
+                updateChrome();
+                render();
+            }
+        }
+
+        function updateRoomBar(code, userCount) {
+            document.getElementById('sessionInfo').innerHTML = `Session <span id="copyArea" style="cursor: pointer;"><strong>${code}</strong> <span id="copyIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span></span>`;
+            document.getElementById('userCount').innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> ${userCount}`;
+            const copyArea = document.getElementById('copyArea');
+            if (copyArea) copyArea.addEventListener('click', () => {
+                navigator.clipboard?.writeText(code);
+                const ci = document.getElementById('copyIcon');
+                if (ci) { ci.innerHTML = ' ✓'; setTimeout(() => { ci.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`; }, 1000); }
             });
         }
 
-        document.getElementById('settingsBtn').addEventListener('click', () => {
-            document.getElementById('settings-overlay').classList.add('active');
-        });
+        function roomCmd(path) {
+            if (!sessionCode) return Promise.resolve();
+            return fetch(`/app/session/${encodeURIComponent(sessionCode)}/${path}`, { method: 'POST' });
+        }
 
-        document.getElementById('menuSettingsBtn').addEventListener('click', () => {
-            document.getElementById('settings-overlay').classList.add('active');
-        });
+        function openRoomOverlay() { document.getElementById('room-overlay').classList.add('active'); }
+        function closeRoomOverlay() { document.getElementById('room-overlay').classList.remove('active'); }
 
-        document.getElementById("closeSettings").addEventListener("click", () => {
-            document.getElementById("settings-overlay").classList.remove("active");
-        });
+        document.getElementById('focusTogetherBtn').onclick = openRoomOverlay;
+        document.getElementById('closeRoom').onclick = closeRoomOverlay;
+        document.getElementById('homeBtn').onclick = leaveRoom;
+        document.getElementById('createBtn').onclick = createRoom;
+        document.getElementById('joinBtn').onclick = () => {
+            const code = document.getElementById('sessionCode').value.trim();
+            if (code) joinRoom(code);
+        };
 
-        document.getElementById("saveSettings").addEventListener("click", () => {
-            const workDuration = parseFloat(document.getElementById("workDuration").value);
-            const breakDuration = parseFloat(document.getElementById("breakDuration").value);
-            const soundEnabled = document.getElementById("soundEnabled").checked;
-            const notificationsEnabled = document.getElementById("notificationsEnabled").checked;
+        // ---- Visibility / resume reconciliation ----
+        function onResume() {
+            if (authority === 'server') resync();
+            else if (authority === 'account') refetchAccount();   // snap to server truth
+            tick();                       // force an immediate reconcile + repaint
+            if (isFocusRunning()) acquireWakeLock();
+        }
+        if (typeof Capacitor !== 'undefined' && Capacitor.Plugins?.App) {
+            Capacitor.Plugins.App.addListener('appStateChange', (s) => { if (s.isActive) onResume(); });
+        }
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) onResume(); });
+        window.addEventListener('online', onResume);            // reconcile when connectivity returns
 
-            localStorage.setItem("workDuration", workDuration);
-            localStorage.setItem("breakDuration", breakDuration);
-            localStorage.setItem("soundEnabled", soundEnabled);
-            localStorage.setItem("notificationsEnabled", notificationsEnabled);
+        // ---- Settings panel ----
+        window.applyLoadedSettings = function applyLoadedSettings(s) {
+            const set = (id, v) => { const el = document.getElementById(id); if (el != null && v != null) el.value = v; };
+            const chk = (id, v) => { const el = document.getElementById(id); if (el != null && v != null) el.checked = v; };
+            set('workDuration', s.workDuration); set('breakDuration', s.breakDuration);
+            set('longBreakDuration', s.longBreakDuration); set('longBreakEvery', s.longBreakEvery);
+            chk('autoStart', s.autoStart); chk('soundEnabled', s.soundEnabled); chk('notificationsEnabled', s.notificationsEnabled);
+            if (s.workDuration != null) localStorage.setItem('workDuration', s.workDuration);
+            if (s.breakDuration != null) localStorage.setItem('breakDuration', s.breakDuration);
+            if (s.longBreakDuration != null) localStorage.setItem('longBreakDuration', s.longBreakDuration);
+            if (s.longBreakEvery != null) localStorage.setItem('longBreakEvery', s.longBreakEvery);
+            if (s.autoStart != null) localStorage.setItem('autoStart', s.autoStart);
+            if (s.soundEnabled != null) localStorage.setItem('soundEnabled', s.soundEnabled);
+            if (s.notificationsEnabled != null) localStorage.setItem('notificationsEnabled', s.notificationsEnabled);
+            if (authority === 'local' && !local.running) { local.remaining = phaseSecs(local.mode, loadSettings()); saveLocal(); render(); }
+        };
 
-            fetch('/app/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workDuration, breakDuration, soundEnabled, notificationsEnabled })
-            });
+        // Reflect any saved settings into the inputs at boot.
+        (function hydrateSettingsInputs() {
+            const s = loadSettings();
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+            const chk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = v; };
+            set('workDuration', s.workMin); set('breakDuration', s.breakMin);
+            set('longBreakDuration', s.longBreakMin); set('longBreakEvery', s.longBreakEvery);
+            chk('autoStart', s.autoStart); chk('soundEnabled', s.sound); chk('notificationsEnabled', s.notifications);
+        })();
 
-            if (ws && ws.readyState == WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                    type: "settings",
-                    workDuration: workDuration,
-                    breakDuration: breakDuration
-                }));
+        function openSettings() { document.getElementById('settings-overlay').classList.add('active'); window.updateDangerZone?.(); }
+        document.getElementById('settingsBtn').addEventListener('click', openSettings);
+        document.getElementById('closeSettings').addEventListener('click', () => document.getElementById('settings-overlay').classList.remove('active'));
+
+        document.getElementById('saveSettings').addEventListener('click', () => {
+            const workDuration = parseFloat(document.getElementById('workDuration').value) || 25;
+            const breakDuration = parseFloat(document.getElementById('breakDuration').value) || 5;
+            const longBreakDuration = parseFloat(document.getElementById('longBreakDuration').value) || 15;
+            const longBreakEvery = Math.max(0, Math.round(parseFloat(document.getElementById('longBreakEvery').value) || 0));
+            const autoStart = document.getElementById('autoStart').checked;
+            const soundEnabled = document.getElementById('soundEnabled').checked;
+            const notificationsEnabled = document.getElementById('notificationsEnabled').checked;
+
+            localStorage.setItem('workDuration', workDuration);
+            localStorage.setItem('breakDuration', breakDuration);
+            localStorage.setItem('longBreakDuration', longBreakDuration);
+            localStorage.setItem('longBreakEvery', longBreakEvery);
+            localStorage.setItem('autoStart', autoStart);
+            localStorage.setItem('soundEnabled', soundEnabled);
+            localStorage.setItem('notificationsEnabled', notificationsEnabled);
+
+            authFetch('/app/me/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workDuration, breakDuration, longBreakDuration, longBreakEvery, autoStart, soundEnabled, notificationsEnabled })
+            }).catch(() => {});
+
+            // Apply to the live timer for the active authority.
+            if (authority === 'server' && sessionCode) {
+                fetch(`/app/session/${encodeURIComponent(sessionCode)}/settings`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workMinutes: workDuration, breakMinutes: breakDuration, longBreakMinutes: longBreakDuration, longBreakEvery })
+                });
+            } else if (authority === 'account') {
+                authFetch('/app/timer/settings', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workMinutes: workDuration, breakMinutes: breakDuration, longBreakMinutes: longBreakDuration, longBreakEvery, autoStart })
+                }).then(r => r.ok ? r.json() : null).then(st => st && applyAccount(st)).catch(() => {});
+            } else if (!local.running) {
+                local.remaining = phaseSecs(local.mode, loadSettings());
+                saveLocal();
             }
-
-            document.getElementById("settings-overlay").classList.remove("active");
+            render();
+            document.getElementById('settings-overlay').classList.remove('active');
         });
 
         document.getElementById('deleteDataBtn').onclick = async () => {
             if (!confirm('Delete all your Bananadoro data? This cannot be undone.')) return;
-
-            await fetch('/app/data', { method: 'DELETE' });
-
-            localStorage.setItem('workDuration', 25);
-            localStorage.setItem('breakDuration', 5);
-            localStorage.setItem('soundEnabled', true);
-            localStorage.setItem('notificationsEnabled', true);
-
-            document.getElementById('workDuration').value = 25;
-            document.getElementById('breakDuration').value = 5;
-            document.getElementById('soundEnabled').checked = true;
-            document.getElementById('notificationsEnabled').checked = true;
-
+            await authFetch('/app/me/data', { method: 'DELETE' });
+            ['workDuration','breakDuration','longBreakDuration','longBreakEvery','autoStart','soundEnabled','notificationsEnabled', LS_STATE].forEach(k => localStorage.removeItem(k));
+            local = freshLocal(); saveLocal();
+            (function () { const s = loadSettings();
+                document.getElementById('workDuration').value = s.workMin;
+                document.getElementById('breakDuration').value = s.breakMin;
+                document.getElementById('longBreakDuration').value = s.longBreakMin;
+                document.getElementById('longBreakEvery').value = s.longBreakEvery;
+                document.getElementById('autoStart').checked = s.autoStart;
+                document.getElementById('soundEnabled').checked = s.sound;
+                document.getElementById('notificationsEnabled').checked = s.notifications;
+            })();
+            render();
             alert('Data deleted and reset to defaults.');
         };
 
         document.getElementById('deleteAccountBtn').onclick = async () => {
             if (!confirm('Delete your entire account? This cannot be undone.')) return;
             if (!confirm('Are you really sure? All data will be lost forever.')) return;
-
-            await fetch('/app/data', { method: 'DELETE' });
+            await authFetch('/app/me/data', { method: 'DELETE' });
             await AuthAPI.deleteAccount();
-
             alert('Account deleted.');
             window.location.reload();
         };
 
-        // Main Functions
-        document.getElementById('start').onclick = () => {
-            if (typeof Notification !== 'undefined') {
-                Notification.requestPermission();
-            }
-            ws.send(JSON.stringify({type: 'start'}));
-            sounds.start.play();
-        };
+        // ---- Global hotkey (desktop only, best-effort) ----
+        // OS-level start/pause that works without focusing the window. Only
+        // wired under Tauri; a no-op on web/mobile. The Rust side registers
+        // the global-shortcut plugin (src-tauri); this binds the accelerator.
+        (async function registerGlobalHotkey() {
+            const gs = window.__TAURI__?.globalShortcut;
+            if (!gs) return;
+            const accel = 'CmdOrCtrl+Shift+Space';
+            try {
+                if (await gs.isRegistered?.(accel)) return;
+                await gs.register(accel, () => { activeState()?.running ? pauseTimer() : startTimer(); });
+            } catch (_) { /* unsupported / already taken — ignore */ }
+        })();
 
-        document.getElementById('stop').onclick = () => {
-            ws.send(JSON.stringify({type: 'stop'}));
-            sounds.stop.play();
-        };
-
-        document.getElementById('reset').onclick = () => {
-            ws.send(JSON.stringify({type: 'reset'}));
-            sounds.reset.play();
-        };
-
-        document.getElementById('timerMode').onclick = () => {
-            mode = mode === "work" ? "break" : "work";
-            ws.send(JSON.stringify({type: "toggleMode"}));
-        };
-
-        document.getElementById('homeBtn').onclick = () => {
-            // Close websocket
-            if (ws) ws.close();
-            sessionCode = null;
-
-            // Show login, hide app
-            document.getElementById('login').style.display = 'flex';
-            document.getElementById('app').style.display = 'none';
-
-            // Reset title
-            document.title = 'Bananadoro Timer';
-        };
+        // ---- Boot ----
+        // Register the service worker on load → PWA is installable and the app
+        // shell works offline. The push *subscription* stays gated to sign-in.
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        updateChrome();
+        render();
     </script>
 </body>
 </html>

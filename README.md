@@ -1,4 +1,4 @@
-# Promodo Timer
+# Bananadoro
 
 A server-first Pomodoro timer with multi-client support.
 
@@ -29,12 +29,12 @@ WebSocket-based Pomodoro timer backend built with Bun and TypeScript. Designed t
 Visit [bananadoro.bananalabs.cloud](https://bananadoro.bananalabs.cloud)
 
 ### Desktop & Mobile
-Download from [Releases](https://github.com/sirniklas9/pomodoro-timer/releases)
+Download from [Releases](https://github.com/SirNiklas9/Bananadoro/releases)
 
 ### Self-host (Docker)
 ```bash
-docker pull ghcr.io/sirniklas9/pomodoro-timer:latest
-docker run -d --name bananadoro -p 3000:3000 ghcr.io/sirniklas9/pomodoro-timer:latest
+docker pull ghcr.io/sirniklas9/bananadoro:latest
+docker run -d --name bananadoro -p 3000:3000 ghcr.io/sirniklas9/bananadoro:latest
 ```
 
 ## License

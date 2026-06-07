@@ -1,0 +1,12 @@
+# Build artifact — reproduced by `GOOS=wasip1 GOARCH=wasm go build` (see README).
+bananadoro.wasm
+
+# Generated embed copy — the build step does `cp -r ../public ./public` before
+# building; the canonical frontend lives in the repo-root /public.
+/public/
+
+# Local sqlite created at runtime.
+*.db
+*.db-shm
+*.db-wal
+/data/

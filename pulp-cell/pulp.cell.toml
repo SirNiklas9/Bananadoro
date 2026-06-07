@@ -1,0 +1,40 @@
+name = "bananadoro"
+version = "0.1.0"
+wasm = "bananadoro.wasm"
+
+# Standalone Pulp cell. Serves its own SSE stream + REST command API and
+# the embedded static frontend. It does NOT implement the gene interface
+# (no SKUs / orders / fulfillment) — it is an app cell, like bananauth.
+#
+# It shares the host's sqlite (single-writer) and the JWT secret with the
+# bananauth cell: bananadoro verifies bananauth-issued session tokens
+# locally to read the account_id on its authenticated /app/me/* routes.
+# No sibling pulp.Call is made, so no `consumes` entry is needed.
+
+capabilities = [
+    "transport.http.inbound",  # REST command routes + static assets
+    "transport.http.outbound", # send Web Push to subscription endpoints
+    "transport.sse",           # one event-stream per room
+    "storage.sqlite",          # per-user settings + last-room sync
+    "entropy.read",            # crypto/rand for room codes + push encryption
+]
+
+[config]
+# Shared HS256 secret with the bananauth cell — the two MUST match (this is
+# how bananadoro verifies bananauth-issued tokens locally). In production the
+# deployment's envsubst step substitutes ${JWT_SECRET} into BOTH manifests at
+# container start. For local runs we pin the same literal bananauth uses.
+jwt_secret = "dev-jwt-secret-change-me"
+
+# Default Pomodoro durations (minutes) for a freshly created room.
+default_work_minutes = 25
+default_break_minutes = 5
+
+# Web Push (VAPID) keys for account-owned timer notifications. Injected at start
+# by docker-entrypoint.sh from $VAPID_PUBLIC / $VAPID_PRIVATE — never committed.
+# They are a MATCHING pair (public is also served to the frontend via /app/vapid),
+# so both are placeholders. Local dev: set both env vars and run the entrypoint,
+# or sed them into a throwaway manifest copy.
+vapid_public = "${VAPID_PUBLIC}"
+vapid_private = "${VAPID_PRIVATE}"
+vapid_subject = "mailto:admin@bananalabs.cloud"
