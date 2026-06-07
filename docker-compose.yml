@@ -1,0 +1,36 @@
+# Bananadoro — single-cell deploy (timer + anonymous rooms).
+#
+# Build context is the PARENT dir so the sibling Pulp/Fiber repos referenced by
+# the Go `replace` directives are available. Run this from the repo dir:
+#
+#   JWT_SECRET=... docker compose up -d --build
+#
+# Solo + anonymous "Focus together" rooms work standalone. Cross-device account
+# sync (settings / last-room) additionally needs the bananauth cell — see the
+# two-cell note at the bottom.
+services:
+  bananadoro:
+    build:
+      context: ..
+      dockerfile: pomodoro-timer/Dockerfile
+    image: bananadoro:latest
+    restart: unless-stopped
+    environment:
+      # Shared HS256 secret with the bananauth deployment.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET (e.g. in a .env file)}
+      HTTP_PORT: "3000"
+    ports:
+      - "3000:3000"
+    volumes:
+      - bananadoro-data:/app/data
+
+volumes:
+  bananadoro-data:
+
+# ---- Two-cell layout (recommended for accounts), for reference ----
+# To co-host bananauth in ONE host (shared sqlite + JWT, no network hop), the
+# image must also build the bananauth cell and the entrypoint must pass both
+# manifests comma-separated:
+#   exec /app/bananadoro-host -manifest /app/cell/pulp.cell.toml,/app/cell/bananauth.cell.toml
+# That needs the Bananauth repo in the build context (it's a sibling already)
+# plus its own envsubst step + the ext-http capability it requires.

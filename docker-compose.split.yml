@@ -1,0 +1,57 @@
+# Bananadoro — two-host ("microservice") layout.
+#
+# An nginx gateway presents ONE origin and routes /auth/* to the bananauth host,
+# everything else to the bananadoro host. Both hosts share JWT_SECRET, so
+# bananadoro verifies bananauth's tokens locally (no service-to-service call).
+# Each host keeps its own sqlite (the cells never shared tables).
+#
+# nginx is the default here (most-deployed reverse proxy). A Caddy alternative
+# is kept in ./Caddyfile — to use it instead, swap the gateway service to:
+#   image: caddy:2-alpine
+#   volumes: ["./Caddyfile:/etc/caddy/Caddyfile:ro"]
+#
+# Build context is the PARENT dir (the Go modules use `replace => ../../...`),
+# so run from the repo dir:
+#
+#   JWT_SECRET=... docker compose -f docker-compose.split.yml up -d --build
+#
+# This is the OPTIONAL split. For the simpler single-process deploy (one host,
+# two cells) use docker-compose.yml instead — see its two-cell note.
+services:
+  gateway:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "3000:80"                 # the only published port
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [bananadoro, bananauth]
+
+  bananadoro:                     # same image/Dockerfile as the one-host setup
+    build:
+      context: ..
+      dockerfile: pomodoro-timer/Dockerfile
+    image: bananadoro:latest
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      HTTP_PORT: "3000"
+    volumes:
+      - bananadoro-data:/app/data
+    # no published ports — reached only via the gateway on the internal network
+
+  bananauth:                      # standalone auth host (its own Pulp-cell image)
+    build:
+      context: ..
+      dockerfile: Bananauth/Dockerfile.pulp
+    image: bananauth:latest
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}   # MUST equal bananadoro's
+      HTTP_PORT: "3000"
+    volumes:
+      - bananauth-data:/app/data
+
+volumes:
+  bananadoro-data:
+  bananauth-data:

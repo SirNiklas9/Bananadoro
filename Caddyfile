@@ -1,0 +1,12 @@
+# Single-origin gateway for the two-host split.
+# /auth/*            → bananauth host (the auth API)
+# everything else    → bananadoro host (frontend, /app/*, /auth-ui/*, SSE)
+#
+# /auth-ui/* is the frontend auth CLIENT (served by bananadoro) and does NOT
+# match /auth/*, so the two never collide. Caddy streams text/event-stream
+# (the room SSE) without extra config.
+:80 {
+	@auth path /auth/*
+	reverse_proxy @auth bananauth:3000
+	reverse_proxy bananadoro:3000
+}
