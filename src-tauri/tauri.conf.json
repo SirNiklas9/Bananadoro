@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "https://bananadoro.bananalabs.cloud",
     "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "bun dev",
+    "beforeDevCommand": "",
     "beforeBuildCommand": ""
   },
   "app": {
