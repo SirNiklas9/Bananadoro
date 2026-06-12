@@ -146,10 +146,15 @@
                     document.getElementById('signOutLink').style.display = 'inline';
 
                     // Load settings (signed-in → server wins on load).
-                    const res = await authFetch('/app/me/settings');
-                    const settings = await res.json();
-                    if (settings) {
-                        if (window.applyLoadedSettings) window.applyLoadedSettings(settings);
+                    try {
+                        const res = await authFetch('/app/me/settings');
+                        if (!res.ok) throw new Error(`settings fetch failed: ${res.status}`);
+                        const settings = await res.json();
+                        if (settings) {
+                            if (window.applyLoadedSettings) window.applyLoadedSettings(settings);
+                        }
+                    } catch (e) {
+                        console.warn('Could not load account settings, using local defaults:', e);
                     }
 
                     // Offer to resume the last room (in the Focus-together overlay).
