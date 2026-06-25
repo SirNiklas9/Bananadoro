@@ -4,37 +4,67 @@ A server-first Pomodoro timer with multi-client support.
 
 ## About
 
-WebSocket-based Pomodoro timer backend built with Bun and TypeScript. Designed to support web, desktop, and mobile clients.
-
-## Status
-
-✅ Released v1.1.0
+Go-to-WASM Pulp cell. Serves an embedded static frontend, anonymous shared
+rooms over SSE, and durable per-account timers with Web Push notifications.
+Auth is delegated to a co-hosted [Bananauth](../Bananauth) cell (shared HS256
+JWT — no service-to-service call needed).
 
 ## Tech Stack
 
-- Runtime: Bun
-- Language: TypeScript
-- Protocol: WebSocket
+- Cell: Go compiled to `wasip1/wasm`, hosted by a custom Pulp host binary
+- Realtime: SSE (one stream per room; commands are HTTP POSTs)
+- Timing: timestamp-based dead reckoning — no tick loop
+- Auth: Bananauth cell (HS256 JWT, verified locally)
+- Persistence: `storage.sqlite` (bun ORM) — user settings, last-room, push devices
+- Push: Web Push / VAPID (RFC 8291 + 8292) — no FCM/APNs
+- Desktop: Tauri v2 shell (Windows; global-shortcut plugin)
+- Mobile: Capacitor (Android; LocalNotifications plugin)
 
 ## Features
-- 25min work / 5min break modes
-- Sound effects and notifications
-- User sessions - sync across devices
-- Desktop app (Windows)
-- Mobile app (Android)
 
-## Usage
+- 25 min work / 5 min break / 15 min long break (configurable)
+- Long-break cadence (every N work rounds, default 4)
+- Sound effects and desktop/web/mobile notifications
+- Anonymous shared rooms — "Focus together" (no sign-in required)
+- Per-account server-authoritative timer — syncs across devices, pushes the
+  phase-end ding even when the app is closed
+- PWA installable on desktop, Android, and iOS 16.4+
+- Offline-capable (solo timer runs from localStorage; reconciles on reconnect)
 
-### Web
-Visit [bananadoro.bananalabs.cloud](https://bananadoro.bananalabs.cloud)
+## Build
 
-### Desktop & Mobile
-Download from [Releases](https://github.com/SirNiklas9/Bananadoro/releases)
-
-### Self-host (Docker)
 ```bash
-docker pull ghcr.io/sirniklas9/bananadoro:latest
-docker run -d --name bananadoro -p 3000:3000 ghcr.io/sirniklas9/bananadoro:latest
+# 1. Copy the frontend into the cell embed directory.
+cd pulp-cell
+cp -r ../public ./public
+
+# 2. Compile the cell to WASM.
+GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o bananadoro.wasm .
+
+# 3. Build the host binary.
+cd ../pulp-deployment
+go build -o bananadoro-host .
+```
+
+## Run
+
+```bash
+# Single cell (timer only; accounts require a co-hosted bananauth):
+HTTP_PORT=3000 JWT_SECRET=dev-secret \
+  ./pulp-deployment/bananadoro-host -manifest ./pulp-cell/pulp.cell.toml
+
+# Two cells in one host (recommended; shared sqlite + JWT, no network hop):
+HTTP_PORT=3000 JWT_SECRET=shared-secret \
+  ./pulp-deployment/bananadoro-host \
+  -manifest ./pulp-cell/pulp.cell.toml,../../Bananauth/pulp-cell/pulp.cell.toml
+```
+
+## Docker
+
+```bash
+# Build context must be the parent GolandProjects/ dir (Go modules use local
+# replace directives for sibling Pulp/Fiber repos).
+JWT_SECRET=... docker compose up -d --build
 ```
 
 ## License
