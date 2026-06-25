@@ -203,6 +203,9 @@ func hkdfExtract(salt, ikm []byte) []byte {
 }
 
 func hkdfExpand(prk, info []byte, l int) []byte {
+	if l > 32 {
+		panic("hkdfExpand: l > 32 requires multi-block expansion; use x/crypto/hkdf instead")
+	}
 	m := hmac.New(sha256.New, prk)
 	m.Write(info)
 	m.Write([]byte{1})
