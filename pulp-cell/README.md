@@ -71,12 +71,9 @@ HTTP_PORT=3000 JWT_SECRET=shared-secret ./bananadoro-host \
 Both cells share the host's sqlite and the **same `JWT_SECRET`** — that is
 what lets bananadoro verify bananauth's tokens with no network hop.
 
-## TODO (next steps, not in this scaffold)
+## Open items
 
-- **Frontend**: rewrite `public/index.html`'s WebSocket client to
-  `EventSource(/app/session/<code>/stream)` + `fetch` POSTs, and add the
-  local `endsAt - now` countdown + `/phase-ended` nudge. (Backend is ready.)
 - Optional long-poll fallback (`GET /app/session/:code?cursor=`) for proxies
   that strip SSE — mirror Evolution's ring-buffer `Broadcaster`.
 - Replace local JWT verify with a sibling `pulp.Call` to bananauth if token
-  revocation ever needs to be honored.
+  revocation ever needs to be honored (current trade-off is fine for a timer).
