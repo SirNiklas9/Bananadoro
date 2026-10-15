@@ -11,7 +11,7 @@
   },
   "private": true,
   "dependencies": {
-    "@capacitor/android": "^8.0.0",
+    "@capacitor/android": "^8.4.3",
     "@capacitor/local-notifications": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0"
   }
